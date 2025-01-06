@@ -6,7 +6,7 @@ set -e
 sudo apt update && sudo apt upgrade -y
 
 # Install necessary packages
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common python3-pip
 
 # Install Docker
 if ! command -v docker &> /dev/null; then
@@ -25,6 +25,9 @@ if ! command -v docker-compose &> /dev/null; then
   sudo chmod +x /usr/local/bin/docker-compose
 fi
 
+# Update pip to the latest version
+sudo -H python3 -m pip install --upgrade pip
+
 # Install NVIDIA Docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
 curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
@@ -34,11 +37,17 @@ sudo apt install -y nvidia-docker2
 sudo systemctl restart docker
 
 # Verify NVIDIA Docker installation
-sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+if ! sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi; then
+  echo "NVIDIA Docker installation failed"
+  exit 1
+fi
 
 # Disable UFW
 sudo systemctl stop ufw
 sudo systemctl disable ufw
+
+# Install nativeauthenticator for JupyterHub
+sudo -H python3 -m pip install git+https://github.com/jupyterhub/nativeauthenticator.git
 
 # Create necessary directories
 mkdir -p ~/aibox/nginx
@@ -51,9 +60,9 @@ mkdir -p ~/aibox/kube_config
 mkdir -p ~/aibox/portainer_data
 
 # Copy configuration files (assuming they are in the same directory as this script)
-cp ./nginx/default.conf ~/aibox/nginx/
-cp ./nginx/htpasswd ~/aibox/nginx/
-cp ./kube_config/* ~/aibox/kube_config/
+cp ./nginx/default.conf ~/aibox/nginx/ || { echo "Failed to copy default.conf"; exit 1; }
+cp ./nginx/htpasswd ~/aibox/nginx/ || { echo "Failed to copy htpasswd"; exit 1; }
+cp ./kube_config/* ~/aibox/kube_config/ || { echo "Failed to copy kube_config files"; exit 1; }
 
 # Set environment variables
 cat <<EOF >> ~/aibox/.env

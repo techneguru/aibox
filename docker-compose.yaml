@@ -24,12 +24,16 @@ services:
       - portainer
     networks:
       - aibox_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # JUPYTERHUB
   ####################################################
   jupyterhub:
-    # Bygget fra Dockerfile.jhub (se nedenfor)
     build:
       context: .
       dockerfile: Dockerfile.jhub
@@ -42,9 +46,9 @@ services:
     volumes:
       - ./jhub_config:/srv/jupyterhub
     environment:
-      # Eksempel: du kan bruke .env for å overstyre
       - JUPYTERHUB_ADMIN_USER=adminuser
       - JUPYTERHUB_ADMIN_PW=supersecret
+      - JUPYTERHUB_AUTHENTICATOR_CLASS=nativeauthenticator.NativeAuthenticator
     command: >
       jupyterhub --ip=0.0.0.0 --port=8000
       --config /srv/jupyterhub/jupyterhub_config.py
@@ -55,6 +59,11 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/hub/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # ROCKET.CHAT
@@ -73,6 +82,11 @@ services:
       ROOT_URL: http://aibox.local/rocket
     depends_on:
       - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   mongo:
     image: mongo:5
@@ -82,6 +96,11 @@ services:
       - aibox_net
     volumes:
       - ./rocket_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # MATTERMOST
@@ -103,6 +122,11 @@ services:
       - DB_PASSWORD=mmuser_password
     depends_on:
       - mattermost-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8065"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   mattermost-db:
     image: postgres:14
@@ -116,6 +140,11 @@ services:
       - POSTGRES_DB=mattermost
       - POSTGRES_USER=mmuser
       - POSTGRES_PASSWORD=mmuser_password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mmuser"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # HEIMDALL (PORTAL)
@@ -134,6 +163,11 @@ services:
       PUID: 1000
       PGID: 1000
       TZ: Europe/Oslo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # FLOWISE
@@ -155,6 +189,11 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # LANGFLOW
@@ -176,6 +215,11 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # OLLAMA
@@ -197,6 +241,11 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ####################################################
   # ANSIBLE
@@ -238,6 +287,11 @@ services:
       - ./portainer_data:/data
     networks:
       - aibox_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   aibox_net:
