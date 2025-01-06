@@ -21,24 +21,36 @@ To install the project, follow these steps:
     ```bash
     cd aibox
     ```
-3. Install the dependencies:
+3. Run the setup script:
     ```bash
-    npm install
+    ./setup_server.sh
+    ```
+
+4. Verify NVIDIA Docker installation:
+    ```bash
+    sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+    ```
+
+## How to Run the Script
+To run the setup script, follow these steps:
+1. Ensure you have met all the prerequisites mentioned above.
+2. Open a terminal and navigate to the project directory:
+    ```bash
+    cd aibox
+    ```
+3. Make the setup script executable (if not already):
+    ```bash
+    chmod +x setup_server.sh
     ```
 4. Run the setup script:
     ```bash
     ./setup_server.sh
     ```
 
-5. Verify NVIDIA Docker installation:
-    ```bash
-    sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
-    ```
-
 ## Usage
 To start the project, run:
 ```bash
-npm start
+docker-compose up -d
 ```
 
 For more detailed usage instructions, refer to the documentation.

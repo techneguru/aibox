@@ -2,3 +2,4 @@ FROM jupyterhub/jupyterhub:latest
 
 # Installer NativeAuthenticator + jupyterlab
 RUN pip install nativeauthenticator jupyterlab
+RUN pip install jupyterhub-dummyauthenticator
