@@ -1,0 +1,3 @@
+# This directory will contain Portainer data.
+# Add your Portainer data here.
+mkdir -p /opt/portainer/data

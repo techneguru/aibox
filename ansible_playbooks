@@ -1,0 +1,4 @@
+# Create a directory for Ansible playbooks
+# This directory will contain Ansible playbooks.
+# Add your Ansible playbooks here.
+mkdir -p ~/ansible/playbooks

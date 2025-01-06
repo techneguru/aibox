@@ -1,0 +1,5 @@
+# This directory should contain the following files:
+# - ca.crt
+# - admin.crt
+# - admin.key
+# Add your Kubernetes configuration files here.

@@ -18,6 +18,10 @@ services:
       - rocketchat
       - mattermost
       - heimdall
+      - flowise
+      - langflow
+      - ollama
+      - portainer
     networks:
       - aibox_net
 
@@ -44,6 +48,13 @@ services:
     command: >
       jupyterhub --ip=0.0.0.0 --port=8000
       --config /srv/jupyterhub/jupyterhub_config.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   ####################################################
   # ROCKET.CHAT
@@ -123,6 +134,110 @@ services:
       PUID: 1000
       PGID: 1000
       TZ: Europe/Oslo
+
+  ####################################################
+  # FLOWISE
+  ####################################################
+  flowise:
+    image: flowise/flowise:latest
+    container_name: aibox-flowise
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "9000"
+    environment:
+      - FLOWISE_URL=http://aibox.local/flowise
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ####################################################
+  # LANGFLOW
+  ####################################################
+  langflow:
+    image: langflow/langflow:latest
+    container_name: aibox-langflow
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "8501"
+    environment:
+      - LANGFLOW_URL=http://aibox.local/langflow
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ####################################################
+  # OLLAMA
+  ####################################################
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aibox-ollama
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "9100"
+    environment:
+      - OLLAMA_URL=http://aibox.local/ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ####################################################
+  # ANSIBLE
+  ####################################################
+  ansible:
+    image: williamyeh/ansible:alpine3
+    container_name: aibox-ansible
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    volumes:
+      - ./ansible_playbooks:/etc/ansible/playbooks
+
+  ####################################################
+  # KUBERNETES
+  ####################################################
+  kubernetes:
+    image: bitnami/kubectl:latest
+    container_name: aibox-kubernetes
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    volumes:
+      - ./kube_config:/root/.kube
+    environment:
+      - KUBECONFIG=/root/.kube/config
+
+  ####################################################
+  # PORTAINER
+  ####################################################
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: aibox-portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    networks:
+      - aibox_net
 
 networks:
   aibox_net:
