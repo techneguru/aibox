@@ -1,0 +1,128 @@
+version: "3.8"
+
+services:
+  ####################################################
+  # NGINX REVERSE PROXY
+  ####################################################
+  nginx:
+    image: nginx:alpine
+    container_name: aibox-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/htpasswd:/etc/nginx/htpasswd:ro
+    depends_on:
+      - jupyterhub
+      - rocketchat
+      - mattermost
+      - heimdall
+    networks:
+      - aibox_net
+
+  ####################################################
+  # JUPYTERHUB
+  ####################################################
+  jupyterhub:
+    # Bygget fra Dockerfile.jhub (se nedenfor)
+    build:
+      context: .
+      dockerfile: Dockerfile.jhub
+    container_name: aibox-jhub
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "8000"
+    volumes:
+      - ./jhub_config:/srv/jupyterhub
+    environment:
+      # Eksempel: du kan bruke .env for å overstyre
+      - JUPYTERHUB_ADMIN_USER=adminuser
+      - JUPYTERHUB_ADMIN_PW=supersecret
+    command: >
+      jupyterhub --ip=0.0.0.0 --port=8000
+      --config /srv/jupyterhub/jupyterhub_config.py
+
+  ####################################################
+  # ROCKET.CHAT
+  ####################################################
+  rocketchat:
+    image: rocketchat/rocket.chat:latest
+    container_name: aibox-rocketchat
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "3000"
+    environment:
+      MONGO_URL: mongodb://mongo:27017/rocketchat
+      MONGO_OPLOG_URL: mongodb://mongo:27017/local
+      ROOT_URL: http://aibox.local/rocket
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:5
+    container_name: aibox-mongo
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    volumes:
+      - ./rocket_mongo_data:/data/db
+
+  ####################################################
+  # MATTERMOST
+  ####################################################
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    container_name: aibox-mm
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "8065"
+    environment:
+      - MM_SERVICESETTINGS_SITEURL=http://aibox.local/mattermost
+      - DB_HOST=mattermost-db
+      - DB_PORT=5432
+      - DB_NAME=mattermost
+      - DB_USER=mmuser
+      - DB_PASSWORD=mmuser_password
+    depends_on:
+      - mattermost-db
+
+  mattermost-db:
+    image: postgres:14
+    container_name: aibox-mmdb
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    volumes:
+      - ./mattermost_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=mattermost
+      - POSTGRES_USER=mmuser
+      - POSTGRES_PASSWORD=mmuser_password
+
+  ####################################################
+  # HEIMDALL (PORTAL)
+  ####################################################
+  heimdall:
+    image: linuxserver/heimdall:latest
+    container_name: aibox-heimdall
+    restart: unless-stopped
+    networks:
+      - aibox_net
+    expose:
+      - "8090"
+    volumes:
+      - ./heimdall_config:/config
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Oslo
+
+networks:
+  aibox_net:
